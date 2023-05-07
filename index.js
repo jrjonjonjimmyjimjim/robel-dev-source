@@ -7,6 +7,8 @@
 //      - Upon being put in the truck, the truck will immediately leave
 // After the warehouse simulation, can add a delivery simulation
 
+const ROBOT_SPEED = 1;
+
 const Enums = {
     'Directive': { // Robot states
         'Idle': 0, // Stopped in place.
@@ -33,11 +35,37 @@ class Robot {
         this.currDirective = Enums.Directive.Idle;
     }
 
+    tick() {
+        switch (this.currDirective) {
+            case Enums.Directive.Idle:
+                break;
+            case Enums.Directive.Fetch:
+                if (this.currPackage) {
+                    if (this.x < this.currPackage.x) {
+                        this.x += ROBOT_SPEED;
+                    } else if (this.x > this.currPackage.x) {
+                        this.x -= ROBOT_SPEED;
+                    } else if (this.y < this.currPackage.y) {
+                        this.y += ROBOT_SPEED;
+                    } else if (this.y > this.currPackage.y) {
+                        this.y -= ROBOT_SPEED;
+                    } else {
+                        this.currDirective = Enums.Directive.Deliver;
+                    }
+                }
+                break;
+            case Enums.Directive.Deliver:
+                break;
+            case Enums.Directive.Shutdown:
+                break;
+        }
+    }
+
     draw(canvasElement) {
         canvasElement.strokeStyle = "#555555";
         canvasElement.fillStyle = "#888888";
-        canvasElement.fillRect(this.x, this.y, 50, 50);
-        canvasElement.strokeRect(this.x, this.y, 50, 50);
+        canvasElement.fillRect(this.x - 25, this.y - 25, 50, 50);
+        canvasElement.strokeRect(this.x - 25, this.y - 25, 50, 50);
     }
 }
 
@@ -51,8 +79,8 @@ class Package {
     draw(canvasElement) {
         canvasElement.strokeStyle = "#c79d6d";
         canvasElement.fillStyle = "#f5c187";
-        canvasElement.fillRect(this.x, this.y, 40, 40);
-        canvasElement.strokeRect(this.x, this.y, 40, 40);
+        canvasElement.fillRect(this.x - 20, this.y - 20, 40, 40);
+        canvasElement.strokeRect(this.x - 20, this.y - 20, 40, 40);
     }
 }
 
@@ -66,47 +94,57 @@ class Truck {
     draw(canvasElement) {
         canvasElement.strokeStyle = "#a32222";
         canvasElement.fillStyle = "#e83535";
-        canvasElement.fillRect(this.x, this.y, 50, 50);
-        canvasElement.strokeRect(this.x, this.y, 50, 50);
+        canvasElement.fillRect(this.x - 25, this.y - 25, 50, 50);
+        canvasElement.strokeRect(this.x - 25, this.y - 25, 50, 50);
     }
 }
+
+let robots = [];
+let packages = [];
 
 function init() {
     const canvas = document.getElementById("canvas");
     if (canvas.getContext) {
-        const ctx = canvas.getContext("2d");
-
-        ctx.fillStyle = "rgb(200, 0, 0)";
-        ctx.fillRect(10, 10, 50, 50);
-
-        ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
-        ctx.fillRect(30, 30, 50, 50);
-
-
-
-        let robots = [];
-        let packages = [];
     
-        const robot1 = new Robot(50, 50);
-        robots.push(robot1);
-        const robot2 = new Robot(250, 250);
-        robots.push(robot2);
+        for (let i = 0; i < 6; i++) {
+            robots.push(
+                new Robot(700, i * 80 + 50)
+            );
+        }
 
-        const package1 = new Package(500, 300, new Destination('12345-6789', 'CO', 'Denver', '123 Adventure St'));
-        packages.push(package1);
-        const package2 = new Package(400, 300, new Destination('12345-6789', 'CO', 'Denver', '416 Saratoga Ave'));
-        packages.push(package2);
+        for (let i = 0; i < 10; i++) {
+            packages.push(
+                new Package(i * 80 + 20, 20, new Destination('12345-6789', 'CO', 'Denver', '123 Adventure St'))
+            );
+        }
         
+        robots[0].currPackage = packages[0];
+        robots[0].currDirective = Enums.Directive.Fetch;
+        window.requestAnimationFrame(draw);
+    }
+
+
+}
+
+function draw() {
+    const canvas = document.getElementById("canvas");
+
+    if (canvas.getContext) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, 800, 500);
+        ctx.strokeRect(0, 0, 800, 500);
+
         for (let robot of robots) {
+            robot.tick(ctx);
             robot.draw(ctx);
         }
 
         for (let package of packages) {
             package.draw(ctx);
         }
+
+        window.requestAnimationFrame(draw);
     }
-
-
 }
 
 init();
