@@ -228,10 +228,11 @@ class Dispatcher { // TODO: convert to singleton
         this.robots[0].currDirective = Enums.Directive.Fetch;
     }
 
-    requestPath(startX, startY, endX, endY) {
+    requestPath(startX, startY, endX, endY) { // TODO next: figure out how to represent shelves, chargers, and belts on the graph
         //DFS
         const fullPath = [[startX, startY]];
         const gridState = [];
+        gridState.push()
         for (let i = 0; i < this.paths.length; i++) {
             const gridRow = [];
             for (let j = 0; j < this.paths[i].length; j++) {
