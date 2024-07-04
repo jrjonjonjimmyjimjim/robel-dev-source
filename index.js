@@ -12,7 +12,7 @@
 // robot doesn't know which pathway it's going to next, it idles on its current path until
 // a pathway frees up
 
-const ROBOT_SPEED = 2; // TODO: If the integer doesn't hit perfectly, the robot gets stuck
+const ROBOT_SPEED = 1; // TODO: If the integer doesn't hit perfectly, the robot gets stuck
 
 const Enums = {
     'Directive': { // Robot states
@@ -20,6 +20,12 @@ const Enums = {
         'Fetch': 1, // Moving to pick up package.
         'Deliver': 2, // Delivering package to belt.
         'Shutdown': 3, // Moving back to charge station.
+    },
+    'Direction': {
+        'Right': 0,
+        'Down': 1,
+        'Left': 2,
+        'Up': 3,
     },
 };
 
@@ -97,6 +103,7 @@ class Robot { // Status light on robot depending upon its state
                     } else {
                         this.currDirective = Enums.Directive.Shutdown;
                         this.chargeStation = dispatcher.requestCharger();
+                        console.log(dispatcher.requestPath(1, 1, 4, 4));
                     }
                 }
                 break;
@@ -219,6 +226,90 @@ class Dispatcher { // TODO: convert to singleton
         this.packages[0].destination = this.belts[0];
         this.robots[0].currPackage = this.packages[0];
         this.robots[0].currDirective = Enums.Directive.Fetch;
+    }
+
+    requestPath(startX, startY, endX, endY) {
+        //DFS
+        const fullPath = [[startX, startY]];
+        const gridState = [];
+        for (let i = 0; i < this.paths.length; i++) {
+            const gridRow = [];
+            for (let j = 0; j < this.paths[i].length; j++) {
+                gridRow.push(0);
+            }
+            gridState.push(gridRow);
+        }
+        let currX = startX, currY = startY;
+        while (currX !== endX && currY !== endY && fullPath.length > 0) {
+            currX = fullPath[fullPath.length - 1][0];
+            currY = fullPath[fullPath.length - 1][1];
+            console.log(`currX ${currX} currY ${currY}`);
+            let searchOrder = [];
+            if (currX < endX) {
+                searchOrder.push(Enums.Direction.Right);
+            }
+            if (currY < endY) {
+                searchOrder.push(Enums.Direction.Down);
+            }
+            if (currX > endX) {
+                searchOrder.push(Enums.Direction.Left);
+            }
+            if (currY > endY) {
+                searchOrder.push(Enums.Direction.Up);
+            }
+            for (const directionKey in Enums.Direction) {
+                const direction = Enums.Direction[directionKey];
+                if (searchOrder.indexOf(direction) === -1) {
+                    searchOrder.push(direction);
+                }
+            }
+            console.log('searchOrder', searchOrder);
+            let directionFound = false;
+            for (const direction of searchOrder) {
+                console.log('direction', typeof(direction));
+                console.log('Enums.Direction.Right', typeof(Enums.Direction.Right));
+                switch (direction) {
+                    case Enums.Direction.Right:
+                        console.log('!this.paths[currX+1][currY].occupied', !this.paths[currX+1][currY].occupied);
+                        console.log('gridState[currX+1][currY]', gridState[currX+1][currY]);
+                        if (!this.paths[currX+1][currY].occupied && gridState[currX+1][currY] === 0) {
+                            gridState[currX+1][currY] += 1;
+                            fullPath.push([currX+1, currY]);
+                            directionFound = true;
+                        }
+                        break;
+                    case Enums.Direction.Down:
+                        if (!this.paths[currX][currY+1].occupied && gridState[currX][currY+1] === 0) {
+                            gridState[currX][currY+1] += 1;
+                            fullPath.push([currX, currY+1]);
+                            directionFound = true;
+                        }
+                        break;
+                    case Enums.Direction.Left:
+                        if (!this.paths[currX-1][currY].occupied && gridState[currX-1][currY] === 0) {
+                            gridState[currX-1][currY] += 1;
+                            fullPath.push([currX-1, currY]);
+                            directionFound = true;
+                        }
+                        break;
+                    case Enums.Direction.Up:
+                        if (!this.paths[currX][currY-1].occupied && gridState[currX][currY-1] === 0) {
+                            gridState[currX][currY-1] += 1;
+                            fullPath.push([currX, currY-1]);
+                            directionFound = true;
+                        }
+                        break;
+                }
+                console.log('directionFound', directionFound);
+                if (directionFound) {
+                    break;
+                }
+            }
+            if (!directionFound) {
+                fullPath.pop();
+            }
+        }
+        return fullPath;
     }
     
     requestCharger() {
